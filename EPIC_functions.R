@@ -1,7 +1,7 @@
 
 parameters <- list()
-parameters$dataFolder <- "/Users/lennartkester/Documents/EPIC/samples_anne_200515/"
-parameters$controlFolder <- "/Users/lennartkester/Documents/EPIC/control/"
+parameters$dataFolder <- "T:/pathologie/KMBP/EPIC/data/"
+parameters$controlFolder <- "T:/pathologie/KMBP/EPIC/data/control/"
 
 packages <- c("shiny","BiocManager")
 bioPackages <- c("conumee","minfi","minfiData","minfiDataEPIC","IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
