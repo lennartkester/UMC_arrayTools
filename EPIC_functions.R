@@ -1,7 +1,7 @@
 
 parameters <- list()
-parameters$dataFolder <- "T:/pathologie/KMBP/EPIC/data/"
-parameters$controlFolder <- "T:/pathologie/KMBP/EPIC/data/control/"
+parameters$dataFolder <- "T:/pathologie/Moleculair/Diagnostiek/Methylatie array/Uitslagen Runfolder 2020/"
+parameters$controlFolder <- "T:/pathologie/KMBP/EPIC/data/controlUMC/"
 
 packages <- c("shiny","BiocManager")
 bioPackages <- c("conumee","minfi","minfiData","minfiDataEPIC","IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
@@ -23,15 +23,22 @@ loadEPICFolders <- function(){
   inputChoicesEPIC <- list.dirs(parameters$dataFolder,recursive = F,full.names = F)
 }
 
-loadAndProcessSamples <- function(sampleName){
-  patient<-read.metharray.exp(paste0(parameters$dataFolder,sampleName))
+loadEPICsamples <- function(folder){
+  files <- list.files(folder,recursive = F,full.names=F,pattern = ".idat")
+  files <- sub("_Grn.idat","",files)
+  files <- sub("_Red.idat","",files)
+  return(unique(files))
+}
+
+loadAndProcessSamples <- function(dataFolder,sampleName){
+  patient<-read.metharray(file.path(dataFolder,paste0(sampleName,"_Grn.idat")))
   gmSet = mapToGenome(preprocessRaw(patient))
   patient <- preprocessIllumina(patient)
   return(patient)
 }
 
-loadAndProcessControls <- function(control = parameters$controlFolder){
-  control<-read.metharray.exp('/Users/lennartkester/Documents/EPIC/control/')
+loadAndProcessControls <- function(controlFolder = parameters$controlFolder){
+  control<-read.metharray.exp(controlFolder)
   gmSet = mapToGenome(preprocessRaw(control))
   control <- preprocessIllumina(control)
   data("exclude_regions")
@@ -41,7 +48,7 @@ loadAndProcessControls <- function(control = parameters$controlFolder){
   return(refData)
 }
 
-segmentData <- function(patient,refData){
+segmentData <- function(patient,refData,dataFolder){
   minfi.data <- CNV.load(patient) 
   minfi.controls <- CNV.load(refData$control)
   patient <- mapToGenome(patient)
@@ -50,9 +57,9 @@ segmentData <- function(patient,refData){
   x <- CNV.bin(x) 
   x <- CNV.detail(x) 
   x <- CNV.segment(x)
-  igvData <- as.data.frame(cbind(as.character(anno@bins@seqnames),anno@bins@ranges@start,anno@bins@ranges@width+anno@bins@ranges@start,names(x@bin$ratio),x@bin$ratio))
-  headerLine <- paste0("#track type=bedGraph name=",sampleNames(patient)," description=center_label visibility=full autoScale=off graphType=points viewLimits=-2:2 windowingFunction=none smoothingWindow=off")
-  file <- paste0(parameters$dataFolder,sampleNames(patient),"/",sampleNames(patient),".igv")
+  igvData <- as.data.frame(cbind(as.character(refData$anno@bins@seqnames),refData$anno@bins@ranges@start,refData$anno@bins@ranges@width+refData$anno@bins@ranges@start,names(x@bin$ratio),x@bin$ratio))
+  headerLine <- paste0("#track type=bedGraph name=",sampleNames(patient)," description=center_label visibility=full autoScale=off graphType=points viewLimits=-1:1 windowingFunction=none smoothingWindow=off")
+  file <- paste0(dataFolder,"\\",sampleNames(patient),".igv")
   cat(headerLine, '\n',  file = file)
   write.table(igvData, file, append = T, col.names = F,row.names = F,quote = F,sep="\t")
   return(x)
